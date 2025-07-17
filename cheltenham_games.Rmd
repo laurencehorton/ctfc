@@ -1,0 +1,924 @@
+```{r}
+library(tidyverse)
+```
+
+```{r}
+game <- read.csv("cheltenham_game_1.0.csv", encoding="UTF-8")
+```
+
+## Players
+
+League
+```{r league}
+league_game <-
+game |>
+filter(game_competition == "EFL" | game_competition == "APL" | game_competition == "SFL")
+
+league_squad <-
+  league_game |>
+  select(game_p1:game_s9mins) |>
+  select(where(is.character)) |>
+  pivot_longer(everything()) |>
+  rename(player = value) |>
+  select(player) |>
+  drop_na() |>
+  count(player, name="league_squad")
+
+league_starts <-
+  league_game |>
+   select(game_p1:game_p11mins) |>
+  select(!(matches("mins"))) |>
+  pivot_longer(everything()) |>
+  rename(player = value) |>
+  select(player) |>
+  group_by(player) |>
+  count(player) |>
+  rename(league_starts = n)
+
+league_sub_name <-
+  league_game |>
+  select(game_s1:game_s9) |>
+  select(!(matches("mins"))) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  rename(player = value)
+
+league_sub_mins <-
+  league_game |>
+  select(game_s1:game_s9mins) |>
+  select(matches("mins")) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  rename(league_mins = value)
+
+league_subs <- cbind(league_sub_name, league_sub_mins) |>
+  drop_na() |>
+  filter(league_mins > 0) |>
+  select(player) |>
+  group_by(player) |>
+  count() |>
+  rename(league_sub = n)
+
+league_minutes_player <-
+  league_game |>
+  select(game_p1:game_s9mins) |>
+  select(where(is.character)) |>
+  pivot_longer(everything())
+
+league_minutes_mins <-
+  league_game |>
+  select(game_p1:game_s9mins) |>
+  select(where(is.numeric)) |>
+  pivot_longer(everything())
+
+league_mins <- 
+  bind_cols(league_minutes_player, league_minutes_mins) |>
+  select(matches("value")) |>
+  rename(player = value...2) |>
+  group_by(player) |>
+   summarize(
+    league_minutes = sum(value...4, na.rm=TRUE))
+
+league_goals <-
+  league_game |>
+  select(game_goal1:game_goal7) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  drop_na() |>
+  count(value, name="league_goals") |>
+  rename(player = value)
+
+league_yellow <-
+  league_game |>
+  select(game_yellow1:game_yellow5) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  drop_na() |>
+  count(value, name="league_yellow") |>
+  rename(player = value)
+
+league_red <-
+  league_game |>
+  select(game_red1:game_red2) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  drop_na() |>
+  count(value, name="league_red") |>
+  rename(player = value)
+
+league <- list(
+  league_squad,
+  league_starts,
+  league_subs,
+  league_mins,
+  league_goals,
+  league_yellow,
+  league_red
+)
+league <-
+  league |>
+  reduce(full_join, by = 'player') |>
+  filter(!is.na(player))
+
+league[is.na(league)] <- 0
+
+league <-
+  league |>
+  mutate(league_unused = league_squad - (league_starts + league_sub), .after = 4) |>
+  select(-c(league_squad))
+
+rm(league_minutes_player, league_minutes_mins, league_mins, league_goals, league_yellow, league_red, league_squad, league_starts, league_subs, league_sub_mins, league_sub_name)
+```
+
+EFL Play-Offs
+```{r FLP}
+flp_game <-
+game |>
+filter(game_competition == "FLP")
+
+flp_squad <-
+  flp_game |>
+  select(game_p1:game_s9mins) |>
+  select(where(is.character)) |>
+  pivot_longer(everything()) |>
+  rename(player = value) |>
+  select(player) |>
+  drop_na() |>
+  count(player, name="flp_squad")
+
+flp_starts <-
+  flp_game |>
+   select(game_p1:game_p11mins) |>
+  select(!(matches("mins"))) |>
+  pivot_longer(everything()) |>
+  rename(player = value) |>
+  select(player) |>
+  group_by(player) |>
+  count(player) |>
+  rename(flp_starts = n)
+
+flp_sub_name <-
+  flp_game |>
+  select(game_s1:game_s9) |>
+  select(!(matches("mins"))) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  rename(player = value)
+
+flp_sub_mins <-
+  flp_game |>
+  select(game_s1:game_s9mins) |>
+  select(matches("mins")) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  rename(flp_mins = value)
+
+flp_subs <- cbind(flp_sub_name, flp_sub_mins) |>
+  drop_na() |>
+  filter(flp_mins > 0) |>
+  select(player) |>
+  group_by(player) |>
+  count() |>
+  rename(flp_sub = n)
+
+flp_minutes_player <-
+  flp_game |>
+  select(game_p1:game_s9mins) |>
+  select(where(is.character)) |>
+  pivot_longer(everything())
+
+flp_minutes_mins <-
+  flp_game |>
+  select(game_p1:game_s9mins) |>
+  select(where(is.numeric)) |>
+  pivot_longer(everything())
+
+flp_mins <- 
+  bind_cols(flp_minutes_player, flp_minutes_mins) |>
+  select(matches("value")) |>
+  rename(player = value...2) |>
+  group_by(player) |>
+   summarize(
+    flp_minutes = sum(value...4))
+
+flp_goals <-
+  flp_game |>
+  select(game_goal1:game_goal7) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  drop_na() |>
+  count(value, name="flp_goals") |>
+  rename(player = value)
+
+flp_yellow <-
+  flp_game |>
+  select(game_yellow1:game_yellow5) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  drop_na() |>
+  count(value, name="flp_yellow") |>
+  rename(player = value)
+
+flp_red <-
+  flp_game |>
+  select(game_red1:game_red2) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  drop_na() |>
+  count(value, name="flp_red") |>
+  rename(player = value)
+
+flp <- list(
+  flp_squad,
+  flp_starts,
+  flp_subs,
+  flp_mins,
+  flp_goals,
+  flp_yellow,
+  flp_red
+)
+flp <-
+  flp |>
+  reduce(full_join, by = 'player') |>
+  filter(if_any(everything(), ~!is.na(.)))
+
+flp[is.na(flp)] <- 0
+
+flp <-
+  flp |>
+  mutate(flp_unused = flp_squad - (flp_starts + flp_sub), .after = 4) |>
+  select(-c(flp_squad))
+
+rm(flp_minutes_player, flp_minutes_mins, flp_mins, flp_goals, flp_yellow, flp_red, flp_squad, flp_starts, flp_subs, flp_sub_mins, flp_sub_name)
+```
+
+FA Cup
+```{r fac}
+fac_game <-
+game |>
+filter(game_competition == "FAC")
+
+fac_squad <-
+  fac_game |>
+  select(game_p1:game_s9mins) |>
+  select(where(is.character)) |>
+  pivot_longer(everything()) |>
+  rename(player = value) |>
+  select(player) |>
+  drop_na() |>
+  count(player, name="fac_squad")
+
+fac_starts <-
+  fac_game |>
+   select(game_p1:game_p11mins) |>
+  select(!(matches("mins"))) |>
+  pivot_longer(everything()) |>
+  rename(player = value) |>
+  select(player) |>
+  group_by(player) |>
+  count(player) |>
+  rename(fac_starts = n)
+
+fac_sub_name <-
+  fac_game |>
+  select(game_s1:game_s9) |>
+  select(!(matches("mins"))) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  rename(player = value)
+
+fac_sub_mins <-
+  fac_game |>
+  select(game_s1:game_s9mins) |>
+  select(matches("mins")) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  rename(fac_mins = value)
+
+fac_subs <- cbind(fac_sub_name, fac_sub_mins) |>
+  drop_na() |>
+  filter(fac_mins > 0) |>
+  select(player) |>
+  group_by(player) |>
+  count() |>
+  rename(fac_sub = n)
+
+fac_minutes_player <-
+  fac_game |>
+  select(game_p1:game_s9mins) |>
+  select(where(is.character)) |>
+  pivot_longer(everything())
+
+fac_minutes_mins <-
+  fac_game |>
+  select(game_p1:game_s9mins) |>
+  select(where(is.numeric)) |>
+  pivot_longer(everything())
+
+fac_mins <- 
+  bind_cols(fac_minutes_player, fac_minutes_mins) |>
+  select(matches("value")) |>
+  rename(player = value...2) |>
+  group_by(player) |>
+   summarize(
+    fac_minutes = sum(value...4))
+
+fac_goals <-
+  fac_game |>
+  select(game_goal1:game_goal7) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  drop_na() |>
+  count(value, name="fac_goals") |>
+  rename(player = value)
+
+fac_yellow <-
+  fac_game |>
+  select(game_yellow1:game_yellow5) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  drop_na() |>
+  count(value, name="fac_yellow") |>
+  rename(player = value)
+
+fac_red <-
+  fac_game |>
+  select(game_red1:game_red2) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  drop_na() |>
+  count(value, name="fac_red") |>
+  rename(player = value)
+
+fac <- list(
+  fac_squad,
+  fac_starts,
+  fac_subs,
+  fac_mins,
+  fac_goals,
+  fac_yellow,
+  fac_red
+)
+fac <-
+  fac |>
+  reduce(full_join, by = 'player') |>
+  filter(if_any(everything(), ~!is.na(.)))
+
+fac[is.na(fac)] <- 0
+
+fac <-
+  fac |>
+  mutate(fac_unused = fac_squad - (fac_starts + fac_sub), .after = 4) |>
+  select(-c(fac_squad))
+  
+rm(fac_minutes_player, fac_minutes_mins, fac_mins, fac_goals, fac_yellow, fac_red, fac_squad, fac_starts, fac_subs, fac_sub_mins, fac_sub_name)
+```
+
+EFL Cup
+```{r flc}
+flc_game <-
+game |>
+filter(game_competition == "FLC")
+
+flc_squad <-
+  flc_game |>
+  select(game_p1:game_s9mins) |>
+  select(where(is.character)) |>
+  pivot_longer(everything()) |>
+  rename(player = value) |>
+  select(player) |>
+  drop_na() |>
+  count(player, name="flc_squad")
+
+flc_starts <-
+  flc_game |>
+   select(game_p1:game_p11mins) |>
+  select(!(matches("mins"))) |>
+  pivot_longer(everything()) |>
+  rename(player = value) |>
+  select(player) |>
+  group_by(player) |>
+  count(player) |>
+  rename(flc_starts = n)
+
+flc_sub_name <-
+  flc_game |>
+  select(game_s1:game_s9) |>
+  select(!(matches("mins"))) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  rename(player = value)
+
+flc_sub_mins <-
+  flc_game |>
+  select(game_s1:game_s9mins) |>
+  select(matches("mins")) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  rename(flc_mins = value)
+
+flc_subs <- cbind(flc_sub_name, flc_sub_mins) |>
+  drop_na() |>
+  filter(flc_mins > 0) |>
+  select(player) |>
+  group_by(player) |>
+  count() |>
+  rename(flc_sub = n)
+
+flc_minutes_player <-
+  flc_game |>
+  select(game_p1:game_s9mins) |>
+  select(where(is.character)) |>
+  pivot_longer(everything())
+
+flc_minutes_mins <-
+  flc_game |>
+  select(game_p1:game_s9mins) |>
+  select(where(is.numeric)) |>
+  pivot_longer(everything())
+
+flc_mins <- 
+  bind_cols(flc_minutes_player, flc_minutes_mins) |>
+  select(matches("value")) |>
+  rename(player = value...2) |>
+  group_by(player) |>
+   summarize(
+    flc_minutes = sum(value...4))
+
+flc_goals <-
+  flc_game |>
+  select(game_goal1:game_goal7) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  drop_na() |>
+  count(value, name="flc_goals") |>
+  rename(player = value)
+
+flc_yellow <-
+  flc_game |>
+  select(game_yellow1:game_yellow5) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  drop_na() |>
+  count(value, name="flc_yellow") |>
+  rename(player = value)
+
+flc_red <-
+  flc_game |>
+  select(game_red1:game_red2) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  drop_na() |>
+  count(value, name="flc_red") |>
+  rename(player = value)
+
+flc <- list(
+  flc_squad,
+  flc_starts,
+  flc_subs,
+  flc_mins,
+  flc_goals,
+  flc_yellow,
+  flc_red
+)
+flc <-
+  flc |>
+  reduce(full_join, by = 'player') |>
+  filter(if_any(everything(), ~!is.na(.)))
+
+flc[is.na(flc)] <- 0
+
+flc <-
+  flc |>
+  mutate(flc_unused = flc_squad - (flc_starts + flc_sub), .after = 4) |>
+  select(-c(flc_squad))
+
+rm(flc_minutes_player, flc_minutes_mins, flc_mins, flc_goals, flc_yellow, flc_red, flc_squad, flc_starts, flc_subs, flc_sub_mins, flc_sub_name)
+```
+
+EFL Trophy
+```{r flt}
+flt_game <-
+game |>
+filter(game_competition == "FLT")
+
+flt_squad <-
+  flt_game |>
+  select(game_p1:game_s9mins) |>
+  select(where(is.character)) |>
+  pivot_longer(everything()) |>
+  rename(player = value) |>
+  select(player) |>
+  drop_na() |>
+  count(player, name="flt_squad")
+
+flt_starts <-
+  flt_game |>
+   select(game_p1:game_p11mins) |>
+  select(!(matches("mins"))) |>
+  pivot_longer(everything()) |>
+  rename(player = value) |>
+  select(player) |>
+  group_by(player) |>
+  count(player) |>
+  rename(flt_starts = n)
+
+flt_sub_name <-
+  flt_game |>
+  select(game_s1:game_s9) |>
+  select(!(matches("mins"))) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  rename(player = value)
+
+flt_sub_mins <-
+  flt_game |>
+  select(game_s1:game_s9mins) |>
+  select(matches("mins")) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  rename(flt_mins = value)
+
+flt_subs <- cbind(flt_sub_name, flt_sub_mins) |>
+  drop_na() |>
+  filter(flt_mins > 0) |>
+  select(player) |>
+  group_by(player) |>
+  count() |>
+  rename(flt_sub = n)
+
+flt_minutes_player <-
+  flt_game |>
+  select(game_p1:game_s9mins) |>
+  select(where(is.character)) |>
+  pivot_longer(everything())
+
+flt_minutes_mins <-
+  flt_game |>
+  select(game_p1:game_s9mins) |>
+  select(where(is.numeric)) |>
+  pivot_longer(everything())
+
+flt_mins <- 
+  bind_cols(flt_minutes_player, flt_minutes_mins) |>
+  select(matches("value")) |>
+  rename(player = value...2) |>
+  group_by(player) |>
+   summarize(
+    flt_minutes = sum(value...4))
+
+flt_goals <-
+  flt_game |>
+  select(game_goal1:game_goal7) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  drop_na() |>
+  count(value, name="flt_goals") |>
+  rename(player = value)
+
+flt_yellow <-
+  flt_game |>
+  select(game_yellow1:game_yellow5) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  drop_na() |>
+  count(value, name="flt_yellow") |>
+  rename(player = value)
+
+flt_red <-
+  flt_game |>
+  select(game_red1:game_red2) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  drop_na() |>
+  count(value, name="flt_red") |>
+  rename(player = value)
+
+flt <- list(
+  flt_squad,
+  flt_starts,
+  flt_subs,
+  flt_mins,
+  flt_goals,
+  flt_yellow,
+  flt_red
+)
+flt <-
+  flt |>
+  reduce(full_join, by = 'player') |>
+  filter(if_any(everything(), ~!is.na(.)))
+
+flt[is.na(flt)] <- 0
+
+flt <-
+  flt |>
+  mutate(flt_unused = flt_squad - (flt_starts + flt_sub), .after = 4) |>
+  select(-c(flt_squad))
+
+rm(flt_minutes_player, flt_minutes_mins, flt_mins, flt_goals, flt_yellow, flt_red, flt_squad, flt_starts, flt_subs, flt_sub_mins, flt_sub_name)
+```
+
+FA Trophy
+```{r fat}
+fat_game <-
+game |>
+filter(game_competition == "FAT")
+
+fat_squad <-
+  fat_game |>
+  select(game_p1:game_s9mins) |>
+  select(where(is.character)) |>
+  pivot_longer(everything()) |>
+  rename(player = value) |>
+  select(player) |>
+  drop_na() |>
+  count(player, name="fat_squad")
+
+fat_starts <-
+  fat_game |>
+   select(game_p1:game_p11mins) |>
+  select(!(matches("mins"))) |>
+  pivot_longer(everything()) |>
+  rename(player = value) |>
+  select(player) |>
+  group_by(player) |>
+  count(player) |>
+  rename(fat_starts = n)
+
+fat_sub_name <-
+  fat_game |>
+  select(game_s1:game_s9) |>
+  select(!(matches("mins"))) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  rename(player = value)
+
+fat_sub_mins <-
+  fat_game |>
+  select(game_s1:game_s9mins) |>
+  select(matches("mins")) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  rename(fat_mins = value)
+
+fat_subs <- cbind(fat_sub_name, fat_sub_mins) |>
+  drop_na() |>
+  filter(fat_mins > 0) |>
+  select(player) |>
+  group_by(player) |>
+  count() |>
+  rename(fat_sub = n)
+
+fat_minutes_player <-
+  fat_game |>
+  select(game_p1:game_s9mins) |>
+  select(where(is.character)) |>
+  pivot_longer(everything())
+
+fat_minutes_mins <-
+  fat_game |>
+  select(game_p1:game_s9mins) |>
+  select(where(is.numeric)) |>
+  pivot_longer(everything())
+
+fat_mins <- 
+  bind_cols(fat_minutes_player, fat_minutes_mins) |>
+  select(matches("value")) |>
+  rename(player = value...2) |>
+  group_by(player) |>
+   summarize(
+    fat_minutes = sum(value...4))
+
+fat_goals <-
+  fat_game |>
+  select(game_goal1:game_goal7) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  drop_na() |>
+  count(value, name="fat_goals") |>
+  rename(player = value)
+
+fat_yellow <-
+  fat_game |>
+  select(game_yellow1:game_yellow5) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  drop_na() |>
+  count(value, name="fat_yellow") |>
+  rename(player = value)
+
+fat_red <-
+  fat_game |>
+  select(game_red1:game_red2) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  drop_na() |>
+  count(value, name="fat_red") |>
+  rename(player = value)
+
+fat <- list(
+  fat_squad,
+  fat_starts,
+  fat_subs,
+  fat_mins,
+  fat_goals,
+  fat_yellow,
+  fat_red
+)
+fat <-
+  fat |>
+  reduce(full_join, by = 'player') |>
+  filter(if_any(everything(), ~!is.na(.)))
+
+fat[is.na(fat)] <- 0
+
+fat <-
+  fat |>
+  mutate(fat_unused = fat_squad - (fat_starts + fat_sub), .after = 4) |>
+  select(-c(fat_squad))
+
+rm(fat_minutes_player, fat_minutes_mins, fat_mins, fat_goals, fat_yellow, fat_red, fat_squad, fat_starts, fat_subs, fat_sub_mins, fat_sub_name)
+```
+
+Other
+```{r Other}
+other_game <-
+game |>
+filter(game_competition != "EFL" & game_competition != "APL" & game_competition != "FLP" & game_competition != "SFL" & game_competition != "FAC" & game_competition != "FLC" & game_competition != "FLT" & game_competition != "FAT")
+
+other_squad <-
+  other_game |>
+  select(game_p1:game_s9mins) |>
+  select(where(is.character)) |>
+  pivot_longer(everything()) |>
+  rename(player = value) |>
+  select(player) |>
+  drop_na() |>
+  count(player, name="other_squad")
+
+other_starts <-
+  other_game |>
+   select(game_p1:game_p11mins) |>
+  select(!(matches("mins"))) |>
+  pivot_longer(everything()) |>
+  rename(player = value) |>
+  select(player) |>
+  group_by(player) |>
+  count(player) |>
+  rename(other_starts = n)
+
+other_sub_name <-
+  other_game |>
+  select(game_s1:game_s9) |>
+  select(!(matches("mins"))) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  rename(player = value)
+
+other_sub_mins <-
+  other_game |>
+  select(game_s1:game_s9mins) |>
+  select(matches("mins")) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  rename(other_mins = value)
+
+other_subs <- cbind(other_sub_name, other_sub_mins) |>
+  drop_na() |>
+  filter(other_mins > 0) |>
+  select(player) |>
+  group_by(player) |>
+  count() |>
+  rename(other_sub = n)
+
+other_minutes_player <-
+  other_game |>
+  select(game_p1:game_s9mins) |>
+  select(where(is.character)) |>
+  pivot_longer(everything())
+
+other_minutes_mins <-
+  other_game |>
+  select(game_p1:game_s9mins) |>
+  select(where(is.numeric)) |>
+  pivot_longer(everything())
+
+other_mins <- 
+  bind_cols(other_minutes_player, other_minutes_mins) |>
+  select(matches("value")) |>
+  rename(player = value...2) |>
+  group_by(player) |>
+   summarize(
+    other_minutes = sum(value...4))
+
+other_goals <-
+  other_game |>
+  select(game_goal1:game_goal7) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  drop_na() |>
+  count(value, name="other_goals") |>
+  rename(player = value)
+
+other_yellow <-
+  other_game |>
+  select(game_yellow1:game_yellow5) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  drop_na() |>
+  count(value, name="other_yellow") |>
+  rename(player = value)
+
+other_red <-
+  other_game |>
+  select(game_red1:game_red2) |>
+  pivot_longer(everything()) |>
+  select(value) |>
+  drop_na() |>
+  count(value, name="other_red") |>
+  rename(player = value)
+
+other <- list(
+  other_squad,
+  other_starts,
+  other_subs,
+  other_mins,
+  other_goals,
+  other_yellow,
+  other_red
+)
+other <-
+  other |>
+  reduce(full_join, by = 'player') |>
+  filter(if_any(everything(), ~!is.na(.)))
+
+other[is.na(other)] <- 0
+
+other <-
+  other |>
+  mutate(other_unused = other_squad - (other_starts + other_sub), .after = 4) |>
+  select(-c(other_squad))
+
+rm(other_minutes_player, other_minutes_mins, other_mins, other_goals, other_yellow, other_red, other_squad, other_starts, other_subs, other_sub_mins, other_sub_name)
+```
+
+
+
+```{r}
+all <- list(
+  league,
+  flp,
+  fac,
+  flc,
+  flt,
+  fat,
+  other
+)
+
+all <-
+  all |>
+  reduce(full_join, by = 'player') |>
+  filter(if_any(everything(), ~!is.na(.)))
+
+all[is.na(all)] <- 0
+
+all <-
+  all |>
+  mutate(
+    all_starts = rowSums(across(ends_with("starts"))),
+    all_sub = rowSums(across(ends_with("sub"))),
+    all_unused = rowSums(across(ends_with("unused"))),
+    all_minutes = rowSums(across(ends_with("minutes"))),
+    all_goals = rowSums(across(ends_with("goals"))),
+    all_yellow = rowSums(across(ends_with("yellow"))),
+    all_red = rowSums(across(ends_with("red")))
+  ) |>
+  relocate(starts_with("all_"), .after = 1)
+
+rm(league, flp, fac, flc, flt, fat, other)
+
+all <-
+  all |>
+  separate_wider_delim(player, "_", names = c("id", "first_name", "last_name"))
+```
+
+
+## Managers
+```{r}
+game |>
+  mutate(game_outcome = recode(
+    game_outcome,
+    `0` = "Lost",
+    `1` = "Draw",
+    `3` = "Won"
+  )) |>
+  group_by(game_manager) |>
+  count(game_outcome) |>
+  pivot_wider(names_from = game_outcome, values_from = n) |>
+  mutate(
+    Draw = ifelse(is.na(Draw), 0, Draw),
+    Won = ifelse(is.na(Won), 0, Won),
+    Lost = ifelse(is.na(Lost), 0, Lost),
+    Played = Won + Draw + Lost,
+    WinPct = round(Won/Played * 100, digits = 1))
+```
