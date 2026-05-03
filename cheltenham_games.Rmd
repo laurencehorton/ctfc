@@ -3,7 +3,7 @@ library(tidyverse)
 ```
 
 ```{r}
-game <- read.csv("cheltenham_game_1.0.csv", encoding="UTF-8")
+game <- read.csv("cheltenham_game_1.1.csv", encoding="UTF-8")
 ```
 
 ## Players
