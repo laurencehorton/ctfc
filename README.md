@@ -1,5 +1,4 @@
-# Cheltenham Town Association Football Club: 1989–2025
-
+# Cheltenham Town Association Football Club: 1989–2026
 ## Table of Contents
 
 - [About](#about)
@@ -22,16 +21,16 @@
 
 ## About
 
-This dataset contains information on first-team matches, goals, player appearances, and disciplinary actions for Cheltenham Town AFC from the 1989/90 season through the 2024/25 season.  
+This dataset contains information on first-team matches, goals, player appearances, and disciplinary actions for Cheltenham Town AFC from the 1989/90 season through the 2025/26 season.  
 
-It covers 1,943 matches, 36 seasons, 14 competitions, and 1,225 players.
+It covers 1,997 matches, 37 seasons, 14 competitions, and 1,250 players.
 
 Usage is intended for football researchers, football historians, and data scientists, but not limited to these groups.  
 
 The data are available for download in UTF-8 encoded CSV format. CSV file includes headers. 
 
 ## Version
-cheltenham_game_1.0.csv
+cheltenham_game_1.1.csv
 
 ## License
 
@@ -163,7 +162,7 @@ Missing away attendence figures for:
 - game_season 20212022, game_match 6, 20, 23, 26.  
 
 Missing players.  
-- game_p1 to game_p11 for game_season 19921993, game_match 1 to 2, 4 to 7, 9 to 11.   
+- game_p1 to game_p11 for game_season 19921993, game_match 1 to 2, 4 to 7, 10 to 11.   
 - game_s1 and game_s2 for game_season 19921993 game_match 1, 4 to 7, 10 and 11.  
 - game_s2 for game_season 19891990, game_match 1 and game_match 3.  
 - game_s2 for game_season 19901991, game_match 1.  
